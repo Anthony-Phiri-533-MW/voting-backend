@@ -1,0 +1,12 @@
+{
+  "name": "sjbu-voting-backend",
+  "version": "1.0.0",
+  "description": "SJBU Voting System backend (zero dependencies)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.18.0"
+  }
+}
