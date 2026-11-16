@@ -134,13 +134,8 @@ async function initDb() {
   // Migration for existing DBs: add round column to votes (idempotent).
   try { await run('ALTER TABLE votes ADD COLUMN round INTEGER NOT NULL DEFAULT 0'); } catch (e) { /* column already exists */ }
 
-  // seed election schedule
-  const sc = (await get('SELECT COUNT(*) AS c FROM election_schedule')).c;
-  if (!sc) {
-    const now = new Date();
-    await run('INSERT INTO election_schedule (election_key,start_date,end_date,results_announcement,updated_at,updated_by) VALUES (?,?,?,?,?,?)',
-      ['sjbu-2025', new Date(now.getTime() - 3600000).toISOString(), new Date(now.getTime() + 7 * 86400000).toISOString(), new Date(now.getTime() + 8 * 86400000).toISOString(), new Date().toISOString(), 1]);
-  }
+  // NOTE: no election schedule is seeded — the election is scheduled by an
+  // admin through the Settings page (demo flow: log in → schedule → vote).
 
   // seed positions
   const pc = (await get('SELECT COUNT(*) AS c FROM positions')).c;
@@ -180,21 +175,29 @@ async function initDb() {
     for (const c of cands) await run('INSERT INTO candidates (position_id,name,image_url,manifesto,created_at) VALUES (?,?,?,?,?)', [c.p, c.n, 'https://via.placeholder.com/150', c.m, now]);
   }
 
-  // seed voters
+  // seed voters (demo vouchers — unused, ready to vote)
   const vc = (await get('SELECT COUNT(*) AS c FROM voters')).c;
   if (!vc) {
     const now = new Date().toISOString();
-    for (let i = 1; i <= 5; i++) await run('INSERT INTO voters (voucher_code,is_used,voted_positions,created_at) VALUES (?,?,?,?)', ['VOUCHER-00' + i, 0, '[]', now]);
+    for (let i = 1; i <= 10; i++) await run('INSERT INTO voters (voucher_code,is_used,voted_positions,created_at) VALUES (?,?,?,?)', ['DEMO-' + String(i).padStart(3, '0'), 0, '[]', now]);
   }
 
-  // seed admin users
-  const ac = (await get('SELECT COUNT(*) AS c FROM admin_users')).c;
-  if (!ac) {
-    const h = hashPassword('admin123');
-    const now = new Date().toISOString();
-    await run('INSERT INTO admin_users (username,email,password_hash,role,is_active,last_login,created_at) VALUES (?,?,?,?,?,?,?)', ['superadmin','superadmin@sjbu.edu',h,'super_admin',1,null,now]);
-    await run('INSERT INTO admin_users (username,email,password_hash,role,is_active,last_login,created_at) VALUES (?,?,?,?,?,?,?)', ['admin1','admin1@sjbu.edu',h,'admin',1,null,now]);
-    await run('INSERT INTO admin_users (username,email,password_hash,role,is_active,last_login,created_at) VALUES (?,?,?,?,?,?,?)', ['moderator1','mod1@sjbu.edu',h,'moderator',1,null,now]);
+  // seed admin users (idempotent per account — demo credentials)
+  const h = hashPassword('admin123');
+  const now = new Date().toISOString();
+  const demoAdmins = [
+    ['superadmin', 'superadmin@sjbu.edu', 'super_admin'],
+    ['admin1', 'admin1@sjbu.edu', 'admin'],
+    ['moderator1', 'mod1@sjbu.edu', 'moderator'],
+  ];
+  for (const [username, email, role] of demoAdmins) {
+    const existing = await get('SELECT id FROM admin_users WHERE username=? OR email=?', [username, email]);
+    if (!existing) {
+      await run('INSERT INTO admin_users (username,email,password_hash,role,is_active,last_login,created_at) VALUES (?,?,?,?,1,null,?)', [username, email, h, role, now]);
+    } else {
+      // Ensure the demo account is active with the demo password.
+      await run('UPDATE admin_users SET is_active=1, password_hash=? WHERE id=?', [h, existing.id]);
+    }
   }
 
   // seed audit log
