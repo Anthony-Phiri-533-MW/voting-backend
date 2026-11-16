@@ -21,6 +21,18 @@ const { createClient } = require('@libsql/client');
 
 const PORT = process.env.PORT || 3005;
 const API_PREFIX = '/api/app';
+if (!process.env.TURSO_DATABASE_URL) {
+  console.error('');
+  console.error('FATAL: TURSO_DATABASE_URL is not set.');
+  console.error('The backend reads its Turso credentials from environment variables —');
+  console.error('from a .env file when running locally, or from your hosting platform\'s');
+  console.error('environment variable settings when deployed (a .env file is never committed).');
+  console.error('');
+  console.error('Set these variables and restart the app:');
+  console.error('  TURSO_DATABASE_URL=libsql://your-database-youruser.aws-eu-central-1.turso.io');
+  console.error('  TURSO_AUTH_TOKEN=your-turso-auth-token');
+  process.exit(1);
+}
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
   authToken: process.env.TURSO_AUTH_TOKEN,
