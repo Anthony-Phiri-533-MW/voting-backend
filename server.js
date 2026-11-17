@@ -1044,7 +1044,12 @@ const server = http.createServer(async (req, res) => {
       const initPayload = { type: 'init', stats: await computeOverallStats(), trends: await computeTrends() };
       res.write('data: ' + JSON.stringify(initPayload) + '\n\n');
       sseClients.add(res);
-      req.on('close', () => { sseClients.delete(res); });
+      // Heartbeat keeps the connection alive through proxies/CDNs that kill idle streams.
+      const heartbeat = setInterval(() => {
+        try { res.write(': ping\n\n'); }
+        catch (e) { clearInterval(heartbeat); sseClients.delete(res); }
+      }, 15000);
+      req.on('close', () => { clearInterval(heartbeat); sseClients.delete(res); });
       return;
     }
 
