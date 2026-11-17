@@ -21,6 +21,9 @@ const { createClient } = require('@libsql/client');
 
 const PORT = process.env.PORT || 3005;
 const API_PREFIX = '/api/app';
+// Default delay (minutes) between election end and automatic results release.
+// Override with RESULTS_RELEASE_DELAY_MINUTES (e.g. 2 for demos). Production default: 30.
+const RESULTS_RELEASE_DELAY_MINUTES = parseInt(process.env.RESULTS_RELEASE_DELAY_MINUTES || '30', 10);
 if (!process.env.TURSO_DATABASE_URL) {
   console.error('');
   console.error('FATAL: TURSO_DATABASE_URL is not set.');
@@ -385,7 +388,7 @@ async function ensureRunoffsForTiedPositions() {
     const endMs = new Date(sched.end_date).getTime();
     const releaseMs = sched.results_announcement
       ? new Date(sched.results_announcement).getTime()
-      : endMs + 30 * 60 * 1000;
+      : endMs + RESULTS_RELEASE_DELAY_MINUTES * 60 * 1000;
     if (Date.now() < releaseMs) return 0; // results not out yet — no runoff creation
 
     if (runoffEnsureInFlight) return 0;
@@ -632,7 +635,7 @@ const server = http.createServer(async (req, res) => {
       // RULE: results are released exactly 30 minutes after the election ends.
       // If no explicit announcement time is stored, derive it from end_date.
       const autoResults = s.end_date
-        ? new Date(new Date(s.end_date).getTime() + 30 * 60 * 1000).toISOString()
+        ? new Date(new Date(s.end_date).getTime() + RESULTS_RELEASE_DELAY_MINUTES * 60 * 1000).toISOString()
         : null;
       return sendJson(res, 200, {
         electionKey: s.election_key,
@@ -650,7 +653,7 @@ const server = http.createServer(async (req, res) => {
       const now = new Date().toISOString();
       // RULE: results default to 30 minutes after the election ends unless set explicitly.
       const resultsAnnouncement = b.resultsAnnouncement
-        || (b.endDate ? new Date(new Date(b.endDate).getTime() + 30 * 60 * 1000).toISOString() : null);
+        || (b.endDate ? new Date(new Date(b.endDate).getTime() + RESULTS_RELEASE_DELAY_MINUTES * 60 * 1000).toISOString() : null);
       await run('INSERT INTO election_schedule (election_key,start_date,end_date,results_announcement,updated_at,updated_by) VALUES (?,?,?,?,?,?)',
         ['sjbu-2025', b.startDate, b.endDate, resultsAnnouncement, now, 1]);
       const s = await get('SELECT * FROM election_schedule ORDER BY id DESC LIMIT 1');
