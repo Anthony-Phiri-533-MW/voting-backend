@@ -1022,6 +1022,36 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { success: true, data: { logs: logs.map(l => ({ id: l.id, adminUsername: l.admin_username, action: l.action, details: l.details, ipAddress: l.ip_address, timestamp: l.timestamp })) } });
     }
 
+    // vouchers (admin): list voucher status + counts
+    if (match(API_PREFIX + '/admin/vouchers') && req.method === 'GET') {
+      const vouchers = await all('SELECT voucher_code, is_used, voted_positions, created_at FROM voters ORDER BY voucher_code');
+      const total = vouchers.length;
+      const used = vouchers.filter(v => v.is_used).length;
+      return sendJson(res, 200, {
+        vouchers: vouchers.map(v => ({
+          code: v.voucher_code,
+          isUsed: !!v.is_used,
+          votedPositions: (() => { try { return v.voted_positions ? JSON.parse(v.voted_positions) : []; } catch (e) { return []; } })(),
+          createdAt: v.created_at,
+        })),
+        counts: { total, used, unused: total - used },
+      });
+    }
+
+    // reset votes (super_admin): clears votes + runoffs and resets all vouchers to unused
+    if (match(API_PREFIX + '/admin/reset-votes') && req.method === 'POST') {
+      if (!requireSuperAdmin(res)) return;
+      await run('DELETE FROM votes');
+      await run('DELETE FROM runoffs');
+      await run("UPDATE voters SET is_used=0, voted_positions='[]'");
+      const now = new Date().toISOString();
+      await run('INSERT INTO audit_logs (admin_username,action,details,ip_address,timestamp) VALUES (?,?,?,?,?)',
+        ['system', 'VOTES_RESET', 'All votes and runoffs cleared; vouchers reset to unused', '127.0.0.1', now]);
+      const [stats, trends] = await Promise.all([computeOverallStats(), computeTrends()]);
+      broadcastSSE({ type: 'update', stats, trends });
+      return sendJson(res, 200, { success: true, message: 'All votes and runoffs cleared; every voucher is unused again.' });
+    }
+
     // stats
     if (match(API_PREFIX + '/stats/overall') && req.method === 'GET') {
       return sendJson(res, 200, { data: await computeOverallStats() });
