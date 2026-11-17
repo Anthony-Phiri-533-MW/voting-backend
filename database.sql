@@ -111,9 +111,12 @@ VALUES (
 -- Positions
 INSERT INTO positions (name) VALUES
     ('President'),
-    ('Vice President')
-
-    
+    ('Vice President'),
+    ('General Secretary'),
+    ('Speaker'),
+    ('Finance Director'),
+    ('Sports Director'),
+    ('Entertainment Director')
 ON CONFLICT DO NOTHING;
 
 -- Candidates for President (position_id = 1)
@@ -128,6 +131,41 @@ INSERT INTO candidates (position_id, name, image_url, manifesto) VALUES
     (2, 'Diego Santos', 'https://via.placeholder.com/150', 'Student voice and campus safety advocate.'),
     (2, 'Elena Gomez', 'https://via.placeholder.com/150', 'Improving student organizations and events.'),
     (2, 'Felix Rivera', 'https://via.placeholder.com/150', 'Green campus and sustainability initiatives.')
+ON CONFLICT DO NOTHING;
+
+-- Candidates for General Secretary (position_id = 3)
+INSERT INTO candidates (position_id, name, image_url, manifesto) VALUES
+    (3, 'Grace Mwangi', 'https://via.placeholder.com/150', 'Transparent record keeping and communication.'),
+    (3, 'Henry Osei', 'https://via.placeholder.com/150', 'Efficient documentation and reporting.'),
+    (3, 'Irene Kato', 'https://via.placeholder.com/150', 'Modernizing administrative processes.')
+ON CONFLICT DO NOTHING;
+
+-- Candidates for Speaker (position_id = 4)
+INSERT INTO candidates (position_id, name, image_url, manifesto) VALUES
+    (4, 'Jack Njoroge', 'https://via.placeholder.com/150', 'Fair and orderly house proceedings.'),
+    (4, 'Karen Muchiri', 'https://via.placeholder.com/150', 'Upholding parliamentary rules.'),
+    (4, 'Larry Otieno', 'https://via.placeholder.com/150', 'Impartial leadership of the house.')
+ON CONFLICT DO NOTHING;
+
+-- Candidates for Finance Director (position_id = 5)
+INSERT INTO candidates (position_id, name, image_url, manifesto) VALUES
+    (5, 'Mary Wanjiku', 'https://via.placeholder.com/150', 'Responsible budget management.'),
+    (5, 'Nathan Kipruto', 'https://via.placeholder.com/150', 'Financial accountability and audits.'),
+    (5, 'Olivia Akinyi', 'https://via.placeholder.com/150', 'Sustainable funding for student events.')
+ON CONFLICT DO NOTHING;
+
+-- Candidates for Sports Director (position_id = 6)
+INSERT INTO candidates (position_id, name, image_url, manifesto) VALUES
+    (6, 'Peter Kamau', 'https://via.placeholder.com/150', 'Upgrade sports facilities.'),
+    (6, 'Quinter Adhiambo', 'https://via.placeholder.com/150', 'More inter-school tournaments.'),
+    (6, 'Robert Mburu', 'https://via.placeholder.com/150', 'Fitness and wellness programs.')
+ON CONFLICT DO NOTHING;
+
+-- Candidates for Entertainment Director (position_id = 7)
+INSERT INTO candidates (position_id, name, image_url, manifesto) VALUES
+    (7, 'Sarah Chelimo', 'https://via.placeholder.com/150', 'Vibrant student events calendar.'),
+    (7, 'Thomas Githinji', 'https://via.placeholder.com/150', 'More cultural festivals and shows.'),
+    (7, 'Upendo Mwende', 'https://via.placeholder.com/150', 'Fun and inclusive entertainment.')
 ON CONFLICT DO NOTHING;
 
 -- Test vouchers (voters)
